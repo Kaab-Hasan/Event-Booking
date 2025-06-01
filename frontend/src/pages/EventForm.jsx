@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const EventForm = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, showAlert } = useAuth();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -43,6 +43,7 @@ const EventForm = () => {
     // Extra validation for time field
     if (!formData.time) {
       setError('Please select a time for your event');
+      showAlert('Please select a time for your event', 'error');
       setIsLoading(false);
       return;
     }
@@ -83,6 +84,7 @@ const EventForm = () => {
       }
       
       setSuccess('Your event request has been submitted successfully! It is pending approval.');
+      showAlert('Event request submitted successfully!', 'success');
       setFormData({
         name: user?.name || '',
         email: user?.email || '',
@@ -93,6 +95,7 @@ const EventForm = () => {
     } catch (err) {
       console.error('Error submitting form:', err);
       setError(`Error: ${err.message || 'Failed to submit request. Please try again.'}`);
+      showAlert(`Error: ${err.message || 'Failed to submit request'}`, 'error');
     } finally {
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [alert, setAlert] = useState(null);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -24,6 +25,21 @@ export const AuthProvider = ({ children }) => {
     
     setLoading(false);
   }, []);
+
+  // Clear alert after 5 seconds
+  useEffect(() => {
+    if (alert) {
+      const timer = setTimeout(() => {
+        setAlert(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [alert]);
+
+  const showAlert = (message, type = 'success') => {
+    setAlert({ message, type });
+  };
 
   const login = async (email, password) => {
     setLoading(true);
@@ -49,9 +65,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       
       setUser(data.user);
+      showAlert(`Welcome back, ${data.user.email.split('@')[0]}!`, 'success');
       return data;
     } catch (err) {
       setError(err.message);
+      showAlert(err.message, 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -82,9 +100,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       
       setUser(data.user);
+      showAlert('Registration successful! Welcome!', 'success');
       return data;
     } catch (err) {
       setError(err.message);
+      showAlert(err.message, 'error');
       throw err;
     } finally {
       setLoading(false);
@@ -95,6 +115,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    showAlert('You have been logged out successfully', 'success');
   };
 
   const value = {
@@ -106,6 +127,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user,
     isAdmin: user?.isAdmin || false,
+    alert,
+    showAlert,
   };
 
   return (
