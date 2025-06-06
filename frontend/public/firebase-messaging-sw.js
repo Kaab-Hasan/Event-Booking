@@ -5,13 +5,13 @@ importScripts('https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compa
 
 // Configuration will be replaced during build
 firebase.initializeApp({
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
-  measurementId: ''
+  apiKey: 'AIzaSyCHT6bLr7Ktp0csC3ZD8tN7J8Uf6cZfpBQ',
+  authDomain: 'event-booking-system-d585d.firebaseapp.com',
+  projectId: 'event-booking-system-d585devent-booking-system-d585d',
+  storageBucket: 'event-booking-system-d585d.firebasestorage.app',
+  messagingSenderId: '490680388731',
+  appId: '1:490680388731:web:595a66c9d93729596666de',
+  measurementId: 'G-BJFEH3MNXX'
 });
 
 const messaging = firebase.messaging();
