@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(100, 50)">
+            <!-- Calendar Base -->
+            <rect fill="#FFFFFF" x="0" y="0" width="600" height="500" rx="20"/>
+            
+            <!-- Calendar Header -->
+            <rect fill="#4F46E5" x="0" y="0" width="600" height="100" rx="20 20 0 0"/>
+            <text fill="#FFFFFF" font-family="Arial" font-size="36" font-weight="bold" x="300" y="65" text-anchor="middle">Event Management</text>
+            
+            <!-- Calendar Grid -->
+            <g transform="translate(50, 150)">
+                <!-- Event Cards -->
+                <g transform="translate(0, 0)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="250" height="100" rx="10"/>
+                    <rect fill="#4F46E5" x="0" y="0" width="10" height="100" rx="5 0 0 5"/>
+                    <text fill="#1F2937" font-family="Arial" font-size="16" font-weight="bold" x="20" y="30">Team Meeting</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="55">9:00 AM - 10:00 AM</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="80">Conference Room A</text>
+                </g>
+                
+                <g transform="translate(270, 0)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="250" height="100" rx="10"/>
+                    <rect fill="#10B981" x="0" y="0" width="10" height="100" rx="5 0 0 5"/>
+                    <text fill="#1F2937" font-family="Arial" font-size="16" font-weight="bold" x="20" y="30">Client Presentation</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="55">2:00 PM - 3:30 PM</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="80">Main Hall</text>
+                </g>
+                
+                <g transform="translate(0, 120)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="250" height="100" rx="10"/>
+                    <rect fill="#F59E0B" x="0" y="0" width="10" height="100" rx="5 0 0 5"/>
+                    <text fill="#1F2937" font-family="Arial" font-size="16" font-weight="bold" x="20" y="30">Workshop</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="55">10:30 AM - 12:00 PM</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="80">Training Room</text>
+                </g>
+                
+                <g transform="translate(270, 120)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="250" height="100" rx="10"/>
+                    <rect fill="#EF4444" x="0" y="0" width="10" height="100" rx="5 0 0 5"/>
+                    <text fill="#1F2937" font-family="Arial" font-size="16" font-weight="bold" x="20" y="30">Team Building</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="55">4:00 PM - 6:00 PM</text>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="80">Outdoor Space</text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg> 

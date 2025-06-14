@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(100, 50)">
+            <!-- Form Base -->
+            <rect fill="#FFFFFF" x="0" y="0" width="600" height="500" rx="20"/>
+            
+            <!-- Form Header -->
+            <rect fill="#4F46E5" x="0" y="0" width="600" height="100" rx="20 20 0 0"/>
+            <text fill="#FFFFFF" font-family="Arial" font-size="36" font-weight="bold" x="300" y="65" text-anchor="middle">Create Account</text>
+            
+            <!-- Form Fields -->
+            <g transform="translate(100, 150)">
+                <!-- Email Field -->
+                <g transform="translate(0, 0)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="400" height="60" rx="10"/>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="25">Email Address</text>
+                    <line stroke="#E5E7EB" x1="20" y1="35" x2="380" y2="35"/>
+                </g>
+                
+                <!-- Password Field -->
+                <g transform="translate(0, 80)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="400" height="60" rx="10"/>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="25">Password</text>
+                    <line stroke="#E5E7EB" x1="20" y1="35" x2="380" y2="35"/>
+                    <circle fill="#6B7280" cx="360" cy="30" r="4"/>
+                    <circle fill="#6B7280" cx="340" cy="30" r="4"/>
+                    <circle fill="#6B7280" cx="320" cy="30" r="4"/>
+                </g>
+                
+                <!-- Confirm Password Field -->
+                <g transform="translate(0, 160)">
+                    <rect fill="#F3F4F6" x="0" y="0" width="400" height="60" rx="10"/>
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="20" y="25">Confirm Password</text>
+                    <line stroke="#E5E7EB" x1="20" y1="35" x2="380" y2="35"/>
+                    <circle fill="#6B7280" cx="360" cy="30" r="4"/>
+                    <circle fill="#6B7280" cx="340" cy="30" r="4"/>
+                    <circle fill="#6B7280" cx="320" cy="30" r="4"/>
+                </g>
+                
+                <!-- Submit Button -->
+                <g transform="translate(0, 260)">
+                    <rect fill="#4F46E5" x="0" y="0" width="400" height="50" rx="25"/>
+                    <text fill="#FFFFFF" font-family="Arial" font-size="16" font-weight="bold" x="200" y="32" text-anchor="middle">Create Account</text>
+                </g>
+                
+                <!-- Login Link -->
+                <g transform="translate(0, 330)">
+                    <text fill="#6B7280" font-family="Arial" font-size="14" x="200" y="0" text-anchor="middle">Already have an account? </text>
+                    <text fill="#4F46E5" font-family="Arial" font-size="14" font-weight="bold" x="320" y="0">Sign in</text>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg> 
