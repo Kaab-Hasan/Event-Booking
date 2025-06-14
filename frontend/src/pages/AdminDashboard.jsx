@@ -5,34 +5,57 @@ import DashboardStats from '../components/DashboardStats';
 const AdminDashboard = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({});
-  const [actionInProgress, setActionInProgress] = useState(false);
-  const [actionType, setActionType] = useState('');
-  const [actionEventId, setActionEventId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    date: '',
+    time: '',
+    status: ''
+  });
+  const [actionLoading, setActionLoading] = useState({
+    isLoading: false,
+    action: '',
+    eventId: null
+  });
+  const [alert, setAlert] = useState({
+    show: false,
+    type: '',
+    message: ''
+  });
   const modalRef = useRef(null);
 
+  // Memoize filtered events
+  const filteredEvents = useMemo(() => {
+    if (statusFilter === 'all') return events;
+    return events.filter(event => event.status === statusFilter);
+  }, [events, statusFilter]);
+
+  // Memoize fetch function
   const fetchEvents = useCallback(async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
+      const token = localStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/events', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch events');
       }
+      
       const data = await response.json();
       setEvents(data);
+      setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, []);
 
@@ -40,369 +63,353 @@ const AdminDashboard = () => {
     fetchEvents();
   }, [fetchEvents]);
 
-  const filteredEvents = useMemo(() => {
-    if (statusFilter === 'all') return events;
-    return events.filter(event => event.status === statusFilter);
-  }, [events, statusFilter]);
+  // Auto-hide alert after 3 seconds
+  useEffect(() => {
+    if (alert.show) {
+      const timer = setTimeout(() => {
+        setAlert({ show: false, type: '', message: '' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [alert.show]);
 
   const handleStatusUpdate = async (eventId, newStatus) => {
     try {
-      setActionInProgress(true);
-      setActionType(newStatus);
-      setActionEventId(eventId);
-
+      setActionLoading({ isLoading: true, action: newStatus, eventId });
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/events/${eventId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update event status');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update status');
       }
 
+      // Update local state
+      setEvents(events.map(event => 
+        event._id === eventId ? { ...event, status: newStatus } : event
+      ));
+
       // Show success alert
-      alert(`Event ${newStatus} successfully!`);
-      
-      // Refresh the events data
-      await fetchEvents();
+      setAlert({
+        show: true,
+        type: 'success',
+        message: `Event ${newStatus} successfully!`
+      });
     } catch (err) {
       setError(err.message);
-      alert(`Error: ${err.message}`);
+      setAlert({
+        show: true,
+        type: 'error',
+        message: err.message
+      });
     } finally {
-      setActionInProgress(false);
-      setActionType('');
-      setActionEventId(null);
+      setActionLoading({ isLoading: false, action: '', eventId: null });
     }
   };
 
-  const handleOpenEditModal = useCallback((event) => {
+  const handleOpenEditModal = (event) => {
     setSelectedEvent(event);
-    setEditFormData({
-      eventName: event.eventName,
-      date: event.date.split('T')[0],
-      timeSlot: event.timeSlot
+    setEditForm({
+      name: event.name,
+      date: event.date,
+      time: event.time,
+      status: event.status
     });
-    setIsEditModalOpen(true);
-  }, []);
+    setShowEditModal(true);
+  };
 
-  const handleCloseEditModal = useCallback(() => {
-    setIsEditModalOpen(false);
-    setSelectedEvent(null);
-    setEditFormData({});
-  }, []);
-
-  const handleEditChange = useCallback((e) => {
+  const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData(prev => ({
+    setEditForm(prev => ({
       ...prev,
       [name]: value
     }));
-  }, []);
+  };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setActionInProgress(true);
-      setActionType('edit');
-      setActionEventId(selectedEvent._id);
+    if (!selectedEvent) return;
 
+    try {
+      setActionLoading({ isLoading: true, action: 'edit', eventId: selectedEvent._id });
+      const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/events/${selectedEvent._id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editFormData)
+        body: JSON.stringify(editForm)
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update event');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update event');
       }
 
+      const updatedEvent = await response.json();
+      
+      // Update local state
+      setEvents(events.map(event => 
+        event._id === selectedEvent._id ? updatedEvent : event
+      ));
+      
+      setShowEditModal(false);
+      setSelectedEvent(null);
+
       // Show success alert
-      alert('Event updated successfully!');
-      
-      // Close the modal
-      setIsEditModalOpen(false);
-      
-      // Refresh the events data
-      await fetchEvents();
+      setAlert({
+        show: true,
+        type: 'success',
+        message: 'Event updated successfully!'
+      });
     } catch (err) {
       setError(err.message);
-      alert(`Error: ${err.message}`);
+      setAlert({
+        show: true,
+        type: 'error',
+        message: err.message
+      });
     } finally {
-      setActionInProgress(false);
-      setActionType('');
-      setActionEventId(null);
+      setActionLoading({ isLoading: false, action: '', eventId: null });
     }
   };
 
+  // Handle clicks outside modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowEditModal(false);
+        setSelectedEvent(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   if (!user?.isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="mt-2">You do not have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Error</h1>
-          <p className="mt-2">{error}</p>
+      <div className="min-h-screen bg-gray-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
+            <p className="mt-2 text-gray-600">You do not have permission to access this page.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {!user?.isAdmin ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-            <p className="text-gray-600">You do not have permission to access this page.</p>
-          </div>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="mt-2 text-gray-600">Manage event bookings and view statistics</p>
         </div>
-      ) : (
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
-          
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-              <p>{error}</p>
-            </div>
-          )}
 
-          {/* Loading Overlay */}
-          {actionInProgress && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                <p className="text-lg font-medium text-gray-900">
-                  {actionType === 'edit' ? 'Updating event...' : 
-                   actionType === 'approved' ? 'Approving event...' :
-                   actionType === 'rejected' ? 'Rejecting event...' : 'Processing...'}
-                </p>
-              </div>
-            </div>
-          )}
+        {/* Alert Message */}
+        {alert.show && (
+          <div className={`mb-4 p-4 rounded-lg ${
+            alert.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {alert.message}
+          </div>
+        )}
 
-          {isLoading ? (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            </div>
-          ) : (
-            <>
-              {events.length > 0 && <DashboardStats events={events} />}
-              
-              <div className="bg-white rounded-lg shadow-md p-6 mt-8">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Event Requests</h2>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setStatusFilter('all')}
-                      className={`px-4 py-2 rounded-md ${
-                        statusFilter === 'all'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      All
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('pending')}
-                      className={`px-4 py-2 rounded-md ${
-                        statusFilter === 'pending'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Pending
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('approved')}
-                      className={`px-4 py-2 rounded-md ${
-                        statusFilter === 'approved'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Approved
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('rejected')}
-                      className={`px-4 py-2 rounded-md ${
-                        statusFilter === 'rejected'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Rejected
-                    </button>
-                  </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : (
+          <>
+            {events.length > 0 && <DashboardStats events={events} />}
+            
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="p-4 border-b">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900">Event Bookings</h2>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="all">All Events</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
+              </div>
 
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Event Name
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Time Slot
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredEvents.map((event) => (
-                        <tr key={event._id}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{event.eventName}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{new Date(event.date).toLocaleDateString()}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{event.timeSlot}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              event.status === 'approved'
-                                ? 'bg-green-100 text-green-800'
-                                : event.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Pending'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredEvents.map((event) => (
+                      <tr key={event._id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(event.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.time}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            event.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            event.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {(event.status || 'pending').charAt(0).toUpperCase() + (event.status || 'pending').slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleOpenEditModal(event)}
+                              disabled={actionLoading.isLoading}
+                              className={`text-blue-600 hover:text-blue-900 ${actionLoading.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              {actionLoading.isLoading && actionLoading.eventId === event._id && actionLoading.action === 'edit' ? (
+                                <span className="inline-block animate-spin mr-1">⟳</span>
+                              ) : null}
+                              Edit
+                            </button>
                             {event.status === 'pending' && (
-                              <div className="flex space-x-2">
+                              <>
                                 <button
                                   onClick={() => handleStatusUpdate(event._id, 'approved')}
-                                  className="text-green-600 hover:text-green-900"
+                                  disabled={actionLoading.isLoading}
+                                  className={`text-green-600 hover:text-green-900 ${actionLoading.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
+                                  {actionLoading.isLoading && actionLoading.eventId === event._id && actionLoading.action === 'approved' ? (
+                                    <span className="inline-block animate-spin mr-1">⟳</span>
+                                  ) : null}
                                   Approve
                                 </button>
                                 <button
                                   onClick={() => handleStatusUpdate(event._id, 'rejected')}
-                                  className="text-red-600 hover:text-red-900"
+                                  disabled={actionLoading.isLoading}
+                                  className={`text-red-600 hover:text-red-900 ${actionLoading.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
+                                  {actionLoading.isLoading && actionLoading.eventId === event._id && actionLoading.action === 'rejected' ? (
+                                    <span className="inline-block animate-spin mr-1">⟳</span>
+                                  ) : null}
                                   Reject
                                 </button>
-                              </div>
+                              </>
                             )}
-                            <button
-                              onClick={() => handleOpenEditModal(event)}
-                              className="text-indigo-600 hover:text-indigo-900 ml-2"
-                            >
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Edit Modal */}
-          {isEditModalOpen && selectedEvent && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div ref={modalRef} className="bg-white rounded-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-semibold mb-4">Edit Event</h2>
-                <form onSubmit={handleEditSubmit}>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Event Name</label>
-                      <input
-                        type="text"
-                        name="eventName"
-                        value={editFormData.eventName || ''}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Date</label>
-                      <input
-                        type="date"
-                        name="date"
-                        value={editFormData.date || ''}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Time Slot</label>
-                      <select
-                        name="timeSlot"
-                        value={editFormData.timeSlot || ''}
-                        onChange={handleEditChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      >
-                        <option value="">Select a time slot</option>
-                        <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
-                        <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
-                        <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
-                        <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
-                        <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
-                        <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
-                        <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
-                        <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={handleCloseEditModal}
-                      className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      Save Changes
-                    </button>
-                  </div>
-                </form>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          )}
+          </>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white" ref={modalRef}>
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900">Edit Event</h3>
+              <form onSubmit={handleEditSubmit} className="mt-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Event Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={editForm.name}
+                    onChange={handleEditChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={editForm.date}
+                    onChange={handleEditChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Time</label>
+                  <input
+                    type="time"
+                    name="time"
+                    value={editForm.time}
+                    onChange={handleEditChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <select
+                    name="status"
+                    value={editForm.status}
+                    onChange={handleEditChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowEditModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionLoading.isLoading}
+                    className={`px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md ${
+                      actionLoading.isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {actionLoading.isLoading ? (
+                      <>
+                        <span className="inline-block animate-spin mr-1">⟳</span>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>

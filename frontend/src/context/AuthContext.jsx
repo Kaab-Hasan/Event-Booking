@@ -1,8 +1,14 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -62,9 +68,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    setLoading(true);
-    setError(null);
-    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -73,33 +76,25 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({ email, password }),
       });
-      
-      const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        const error = await response.json();
+        throw new Error(error.message || 'Login failed');
       }
-      
-      // Save token and user data
+
+      const data = await response.json();
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
       setUser(data.user);
       showAlert(`Welcome back, ${data.user.email.split('@')[0]}!`, 'success');
-      return data;
-    } catch (err) {
-      setError(err.message);
-      showAlert(err.message, 'error');
-      throw err;
-    } finally {
-      setLoading(false);
+      return data.user; // Return the user data
+    } catch (error) {
+      setError(error.message || 'Login failed');
+      showAlert(error.message, 'error');
+      throw error;
     }
   }, [showAlert]);
 
   const register = useCallback(async (email, password) => {
-    setLoading(true);
-    setError(null);
-    
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -108,28 +103,23 @@ export const AuthProvider = ({ children }) => {
         },
         body: JSON.stringify({ email, password }),
       });
-      
-      const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        const error = await response.json();
+        throw new Error(error.message || 'Registration failed');
       }
-      
-      // Save token and user data
+
+      const data = await response.json();
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
       setUser(data.user);
       showAlert('Registration successful! Welcome!', 'success');
-      return data;
-    } catch (err) {
-      setError(err.message);
-      showAlert(err.message, 'error');
-      throw err;
-    } finally {
-      setLoading(false);
+      return data.user; // Return the user data
+    } catch (error) {
+      setError(error.message || 'Registration failed');
+      showAlert(error.message, 'error');
+      throw error;
     }
-  }, [showAlert]);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');

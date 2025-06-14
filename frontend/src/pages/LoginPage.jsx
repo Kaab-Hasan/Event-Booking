@@ -35,8 +35,13 @@ const LoginPage = () => {
     setError('');
 
     try {
-      await login(formData.email, formData.password);
-      navigate('/admin/dashboard');
+      const user = await login(formData.email, formData.password);
+      // Redirect based on user role
+      if (user.isAdmin) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message);
     } finally {

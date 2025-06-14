@@ -1,192 +1,213 @@
-# 🎟️ Event Booking App
+# Event Booking System
 
-A full-featured MERN stack application that allows users to browse and book events, while admins can manage events and get notified of new bookings. The app integrates **Firebase Cloud Messaging (FCM)** to send **push notifications** directly to users' browsers.
+A full-stack web application for managing event bookings with admin approval workflow.
 
----
+## Features
 
-## 📌 Description
+### User Features
+- User registration and authentication
+- Create event booking requests
+- View personal booking history
+- Real-time status updates
+- Responsive design for all devices
 
-The Event Booking App is designed to simplify event management and participation. It allows:
+### Admin Features
+- Secure admin dashboard
+- View all event bookings
+- Approve/reject event requests
+- Edit event details
+- View booking statistics and analytics
+- Filter events by status
+- Real-time updates
 
-- Admins to create, edit, or delete events
-- Users to view and book events
-- Real-time push notifications via Firebase for updates and reminders
+## Tech Stack
 
-Built using modern web technologies and a modular architecture, it's scalable for both educational and enterprise use cases.
+### Frontend
+- React.js
+- React Router for navigation
+- Context API for state management
+- Chart.js for analytics
+- Tailwind CSS for styling
+- Axios for API requests
 
----
+### Backend
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- JWT for authentication
+- Bcrypt for password hashing
 
-## 🚀 Features
+## Prerequisites
 
-- 🔐 User authentication with login/signup
-- 🗓️ Event listing and booking
-- 🧑‍💼 Admin dashboard for managing events
-- 🔔 Firebase Cloud Messaging (Push notifications)
-- 💻 Fully responsive design (mobile & desktop)
+- Node.js (v14 or higher)
+- MongoDB
+- npm or yarn
 
----
+## Installation
 
-## 🛠️ Tech Stack
-
-- **Frontend**: React.js, Vite, Firebase
-- **Backend**: Node.js, Express.js, MongoDB
-- **Notifications**: Firebase Cloud Messaging (FCM)
-
----
-
-## 📁 Project Structure
-
-event-booking-app/
-├── backend/
-│ ├── controllers/
-│ ├── models/
-│ ├── routes/
-│ └── server.js
-├── frontend/
-│ ├── public/
-│ ├── src/
-│ │ ├── components/
-│ │ ├── pages/
-│ │ ├── firebase.js
-│ │ └── App.jsx
-│ └── vite.config.js
-├── .env
-└── README.md
-
----
-
-## ⚙️ Getting Started
-
-### 📦 Prerequisites
-
-- Node.js and npm installed
-- MongoDB (local or MongoDB Atlas)
-- Firebase project with FCM enabled
-
-### 🔧 Installation Steps
-
-1. **Clone the repository**
-
+1. Clone the repository:
 ```bash
-git clone https://github.com/Kaab-Hasan/event-booking-app.git
-cd event-booking-app
-Setup environment variables
+git clone <repository-url>
+cd event-booking-system
+```
 
-Create a .env file in the project root:
+2. Install backend dependencies:
+```bash
+cd backend
+npm install
+```
 
+3. Install frontend dependencies:
+```bash
+cd ../frontend
+npm install
+```
+
+4. Create a `.env` file in the backend directory with the following variables:
 ```env
-# Backend
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
-
-# Firebase
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
-VITE_FIREBASE_VAPID_KEY=your_public_vapid_key
+JWT_SECRET=your_jwt_secret
 ```
-Install dependencies
 
+## Running the Application
+
+1. Start the backend server:
 ```bash
-# Backend
 cd backend
-npm install
-
-# Frontend
-cd ../frontend
-npm install
-```
-Run the application
-
-```bash
-# Start backend server
-cd backend
-npm start
-
-# Start frontend server
-cd ../frontend
 npm run dev
 ```
-Then open http://localhost:3000 in your browser.
 
-🔔 Firebase Cloud Messaging Setup
-To enable push notifications:
-
-Go to Firebase Console > Project Settings > Cloud Messaging
-
-Generate a Web Push certificate
-
-Copy the Public VAPID Key and paste it into .env as VITE_FIREBASE_VAPID_KEY
-
-Firebase Init (frontend/src/firebase.js)
-```javascript
-import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging";
-
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+2. Start the frontend development server:
+```bash
+cd frontend
+npm run dev
 ```
-Request Token and Listen for Messages
-```javascript
-import { messaging } from "./firebase";
-import { getToken, onMessage } from "firebase/messaging";
 
-getToken(messaging, {
-  vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-})
-  .then((currentToken) => {
-    if (currentToken) {
-      console.log("Token:", currentToken);
-      // Send this token to backend for sending push
-    }
-  })
-  .catch((err) => console.error("Token error:", err));
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
 
-onMessage(messaging, (payload) => {
-  console.log("Message received:", payload);
-  // Display notification or update UI
-});
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user info
+
+### Events
+- `POST /api/events` - Create a new event request
+- `GET /api/events` - Get all events (admin only)
+- `GET /api/events/user/:email` - Get events by user email
+- `GET /api/events/:id` - Get event by ID
+- `PATCH /api/events/:id/status` - Update event status
+- `PATCH /api/events/:id` - Update event details
+
+## Project Structure
+
 ```
-🔐 Local Development Notes
-Push notifications require HTTPS
+event-booking-system/
+├── frontend/
+│   ├── public/
+│   │   └── images/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── DashboardStats.jsx
+│   │   │   ├── EventForm.jsx
+│   │   │   ├── Layout.jsx
+│   │   │   ├── LoginForm.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── ProtectedRoute.jsx
+│   │   │   └── RegisterForm.jsx
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   ├── pages/
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── HomePage.jsx
+│   │   │   ├── LoginPage.jsx
+│   │   │   └── RegisterPage.jsx
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vite.config.js
+├── backend/
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   └── eventController.js
+│   ├── middlewares/
+│   │   └── auth.js
+│   ├── models/
+│   │   ├── Event.js
+│   │   └── User.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   └── events.js
+│   ├── .env
+│   ├── package.json
+│   └── server.js
+└── README.md
+```
 
-Use Firebase Hosting or local HTTPS setup
+## Features in Detail
 
-Foreground messages still work on localhost
+### Authentication System
+- Secure user registration and login
+- JWT-based authentication
+- Protected routes for authenticated users
+- Admin role-based access control
 
-📤 Deployment
-For production deployment, consider:
+### Event Booking
+- Create event requests with:
+  - Event name
+  - Date and time
+  - Description
+- Real-time status updates
+- Email-based event tracking
 
-Hosting backend on platforms like Render, Railway, or Heroku
+### Admin Dashboard
+- Comprehensive event management
+- Status updates (approve/reject)
+- Event editing capabilities
+- Statistical analysis:
+  - Total events
+  - Status distribution
+  - Time slot analysis
+  - Event timeline
 
-Hosting frontend with Firebase Hosting or Netlify
+### User Interface
+- Modern, responsive design
+- Intuitive navigation
+- Real-time feedback
+- Loading states and alerts
+- Form validation
+- Error handling
 
-Ensure you use a production MongoDB connection string (e.g. MongoDB Atlas)
+## Security Features
+- Password hashing with bcrypt
+- JWT token authentication
+- Protected API endpoints
+- Input validation
+- Error handling middleware
 
-🧾 License
-This project is open-source and available under the MIT License.
+## Performance Optimizations
+- Memoized components
+- Optimized database queries
+- Efficient state management
+- Lazy loading of components
+- Caching strategies
 
-🙌 Acknowledgements
-Firebase
+## Contributing
 
-React.js
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Node.js
+## License
 
-MongoDB
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-Built with ❤️ by Muhammad Kaab Hasan Siddiqui
+## Support
+
+For support, email support@eventbooking.com or create an issue in the repository.
